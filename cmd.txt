@@ -1,0 +1,28 @@
+// https://blog.csdn.net/u013066244/article/details/78725842/
+//basicConstraints = CA:FALSE
+//keyUsage = digitalSignature,nonRepudiation,keyEncipherment,dataEncipherment,keyAgreement,keyCertSign,cRLSign,encipherOnly,decipherOnly
+//subjectAltName = @alt_names
+//root 证书创建
+//生成私钥
+openssl genpkey -algorithm RSA -out root.key -pkeyopt rsa_keygen_bits:4096 -pkeyopt rsa_keygen_pubexp:3
+//生成请求文件
+openssl req -new -out root.csr -key root.key -config root.conf
+//查看证书请求文件内容
+openssl req -text -noout -in root.csr
+//自签名证书
+//-signkey 签名私钥，设置为自身就是自签名。
+//-extfile 设置扩展属性所在文件
+//-extensions 设置扩展属性配置节
+openssl x509 -req -days 3650 -in root.csr -signkey root.key -out root.crt -extfile root.conf -extensions v3_req 
+
+
+//https 证书创建
+//生成私钥
+openssl genpkey -algorithm RSA -out server.key -pkeyopt rsa_keygen_bits:4096 -pkeyopt rsa_keygen_pubexp:3
+//生成请求文件
+openssl req -new -out server.csr -key server.key -config server.conf
+//使用root签名
+openssl x509 -req -days 3650 -extfile server.conf -CA root.crt -CAkey root.key -CAcreateserial -in server.csr -out server.crt -extensions v3_req 
+
+//合成pfx，iis使用
+openssl pkcs12 -export -in server.crt -inkey server.key -out server.pfx
